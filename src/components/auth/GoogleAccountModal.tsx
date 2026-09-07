@@ -22,6 +22,8 @@ import {
   getStoredGoogleClientId,
   saveStoredGoogleClientId,
   triggerGoogleSignIn,
+  syncSettingsCloud,
+  fetchSettingsCloud,
   syncSettingsToGoogleDrive,
   fetchSettingsFromGoogleDrive,
 } from "@/lib/sync/google-sync";
@@ -76,16 +78,16 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
         setIsLoading(false);
         setStatusMessage(`Signed in as ${authenticatedUser.email}! Syncing your vault...`);
 
-        // Check for existing cloud settings in user's Google Drive
-        if (authenticatedUser.accessToken) {
-          const remoteSettings = await fetchSettingsFromGoogleDrive(authenticatedUser.accessToken);
+        // Check for existing cloud settings
+        if (authenticatedUser.id) {
+          const remoteSettings = await fetchSettingsCloud(authenticatedUser);
           if (remoteSettings && remoteSettings.keys && Object.keys(remoteSettings.keys).length > 0) {
             onUpdateSettings(remoteSettings);
-            setStatusMessage("Successfully synced your keys & agents from Google!");
+            setStatusMessage("Successfully synced your keys & agents from your account!");
           } else {
-            // First time: upload local settings to Google
-            await syncSettingsToGoogleDrive(authenticatedUser.accessToken, settings);
-            setStatusMessage("Your settings are now securely saved to your Google Account!");
+            // First time: upload local settings to cloud
+            await syncSettingsCloud(authenticatedUser, settings);
+            setStatusMessage("Your settings are now securely synced across your devices!");
           }
         }
 
@@ -93,7 +95,13 @@ export const GoogleAccountModal: React.FC<GoogleAccountModalProps> = ({
       },
       (error) => {
         setIsLoading(false);
-        setErrorMessage(error || "Google Sign-In was cancelled or failed.");
+        if (typeof error === "string" && (error.includes("access_denied") || error.includes("verification"))) {
+          setErrorMessage(
+            "Access Denied (Google Testing Mode): In your Google Cloud Console -> OAuth consent screen, scroll down to 'Test users' and add your Gmail address (or click 'Publish App')."
+          );
+        } else {
+          setErrorMessage(error || "Google Sign-In was cancelled or failed.");
+        }
       }
     );
   };

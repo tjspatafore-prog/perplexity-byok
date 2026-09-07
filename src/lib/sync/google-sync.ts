@@ -75,7 +75,8 @@ export function loadGoogleGisScript(): Promise<void> {
 }
 
 /**
- * Trigger Google OAuth 2.0 Sign-In Flow
+ * Trigger Google Sign-In Flow with standard non-sensitive scopes (openid, email, profile).
+ * Does not require sensitive Google Drive permissions, preventing Error 403 access_denied.
  */
 export async function triggerGoogleSignIn(
   clientId: string,
@@ -89,9 +90,10 @@ export async function triggerGoogleSignIn(
       throw new Error("Google Identity Services not ready.");
     }
 
+    // Use standard non-sensitive profile scopes only
     const client = (window as any).google.accounts.oauth2.initTokenClient({
       client_id: clientId.trim(),
-      scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appdata",
+      scope: "openid email profile",
       callback: async (response: any) => {
         if (response.error) {
           onError(response.error_description || response.error);
@@ -105,7 +107,7 @@ export async function triggerGoogleSignIn(
         }
 
         try {
-          // Fetch Google User Profile info
+          // Fetch standard Google User Profile
           const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
@@ -138,120 +140,69 @@ export async function triggerGoogleSignIn(
 }
 
 /**
- * Sync all settings & keys to the user's private Google Drive AppData folder
+ * Sync settings & keys to the cloud backend keyed by Google user ID
  */
-export async function syncSettingsToGoogleDrive(
-  accessToken: string,
+export async function syncSettingsCloud(
+  user: GoogleUserProfile,
   settings: AppSettings
 ): Promise<boolean> {
   try {
-    const payload = JSON.stringify({
+    const payload = {
       keys: settings.keys,
       customAgents: settings.customAgents || [],
       defaultModel: settings.defaultModel,
       defaultFocusMode: settings.defaultFocusMode,
       swarmRoster: settings.swarmRoster,
       modelAliases: settings.modelAliases,
-      updatedAt: Date.now(),
+    };
+
+    const res = await fetch("/api/user/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        email: user.email,
+        payload,
+      }),
     });
 
-    // 1. Search for existing config file in appDataFolder
-    const searchRes = await fetch(
-      "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='ai_byok_sync.json'&fields=files(id,name)",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-
-    if (!searchRes.ok) return false;
-    const searchData = await searchRes.json();
-    const existingFile = searchData.files?.[0];
-
-    if (existingFile) {
-      // 2. Update existing file
-      const updateRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: payload,
-        }
-      );
-      return updateRes.ok;
-    } else {
-      // 3. Create new file in appDataFolder using multipart upload
-      const metadata = {
-        name: "ai_byok_sync.json",
-        parents: ["appDataFolder"],
-      };
-
-      const boundary = "-------314159265358979323846";
-      const delimiter = `\r\n--${boundary}\r\n`;
-      const closeDelim = `\r\n--${boundary}--`;
-
-      const multipartBody =
-        delimiter +
-        "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
-        JSON.stringify(metadata) +
-        delimiter +
-        "Content-Type: application/json\r\n\r\n" +
-        payload +
-        closeDelim;
-
-      const createRes = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": `multipart/related; boundary=${boundary}`,
-          },
-          body: multipartBody,
-        }
-      );
-      return createRes.ok;
-    }
+    return res.ok;
   } catch (err) {
-    console.error("Failed to sync to Google Drive:", err);
+    console.error("Failed to sync settings to cloud:", err);
     return false;
   }
 }
 
 /**
- * Fetch settings & keys from the user's private Google Drive AppData folder
+ * Fetch settings & keys from the cloud backend keyed by Google user ID
  */
-export async function fetchSettingsFromGoogleDrive(
-  accessToken: string
+export async function fetchSettingsCloud(
+  user: GoogleUserProfile
 ): Promise<Partial<AppSettings> | null> {
   try {
-    const searchRes = await fetch(
-      "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='ai_byok_sync.json'&fields=files(id,name)",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
+    const res = await fetch(`/api/user/sync?userId=${encodeURIComponent(user.id)}`);
+    if (!res.ok) return null;
 
-    if (!searchRes.ok) return null;
-    const searchData = await searchRes.json();
-    const existingFile = searchData.files?.[0];
-    if (!existingFile) return null;
-
-    // Download file content
-    const downloadRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${existingFile.id}?alt=media`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-
-    if (!downloadRes.ok) return null;
-    const data = await downloadRes.json();
-    return data;
+    const data = await res.json();
+    if (data.found && data.payload) {
+      return data.payload;
+    }
+    return null;
   } catch (err) {
-    console.error("Failed to fetch from Google Drive:", err);
+    console.error("Failed to fetch settings from cloud:", err);
     return null;
   }
 }
+
+// Backwards compatibility aliases
+export const syncSettingsToGoogleDrive = async (accessToken: string, settings: AppSettings) => {
+  const user = getGoogleUserSession();
+  if (user) return syncSettingsCloud(user, settings);
+  return false;
+};
+
+export const fetchSettingsFromGoogleDrive = async (accessToken: string) => {
+  const user = getGoogleUserSession();
+  if (user) return fetchSettingsCloud(user);
+  return null;
+};
