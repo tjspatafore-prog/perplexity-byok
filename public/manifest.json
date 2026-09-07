@@ -1,0 +1,18 @@
+{
+  "name": "Perplexity BYOK",
+  "short_name": "Perplexity",
+  "description": "Perplexity-style AI search with BYOK multi-model intelligence",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#191a1a",
+  "theme_color": "#191a1a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
