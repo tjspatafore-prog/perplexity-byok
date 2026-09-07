@@ -1,6 +1,6 @@
 export type ProviderType = "google" | "openai" | "anthropic" | "grok" | "kimi" | "qwen" | "deepgram";
 
-export type FocusMode = "web" | "academic" | "writing" | "swarm";
+export type FocusMode = "web" | "academic" | "writing" | "swarm" | "deep-research";
 
 export interface ModelOption {
   id: string;

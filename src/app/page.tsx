@@ -392,7 +392,14 @@ export default function Home() {
             <div className="flex-1 flex flex-col items-center justify-center text-center my-auto py-12 space-y-8 animate-fadeIn">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#202222] border border-[#2e3030] text-xs text-gray-300">
-                  {focusMode === "swarm" ? (
+                  {focusMode === "deep-research" ? (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-cyan-300 font-medium">
+                        Deep Research Mode: Crawls 30+ sources to build exhaustive whitepapers
+                      </span>
+                    </>
+                  ) : focusMode === "swarm" ? (
                     <>
                       <Users className="w-3.5 h-3.5 text-purple-400" />
                       <span className="text-purple-300 font-medium">
@@ -506,6 +513,7 @@ export default function Home() {
                     <AnswerView
                       key={message.id}
                       message={message}
+                      query={activeThread.messages[index - 1]?.content || activeThread.title}
                       deepgramKey={settings.keys.deepgram}
                       deepgramVoice={settings.deepgramVoice}
                       onFollowUpClick={handleSearch}
@@ -517,7 +525,7 @@ export default function Home() {
               </div>
 
               {/* Bottom Search Input for Follow-ups */}
-              <div className="sticky bottom-0 bg-gradient-to-t from-[#191a1a] via-[#191a1a] to-transparent pt-4 pb-2 mt-8">
+              <div className="no-print sticky bottom-0 bg-gradient-to-t from-[#191a1a] via-[#191a1a] to-transparent pt-4 pb-2 mt-8">
                 <SearchBar
                   onSearch={handleSearch}
                   selectedModelId={selectedModelId}

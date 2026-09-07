@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   UploadCloud,
+  Sparkles,
 } from "lucide-react";
 import { FocusMode, ApiKeys, UploadedDocument } from "@/lib/types";
 import { ModelSelector } from "./ModelSelector";
@@ -354,6 +355,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 ? "Listening to your voice... Click the red mic to stop"
                 : isTranscribing
                 ? "Deepgram is transcribing audio..."
+                : focusMode === "deep-research"
+                ? "Deep Research mode: Crawls 30+ sources and generates in-depth whitepaper report..."
+                : focusMode === "swarm"
+                ? "Ask the AI Swarm: models will debate, critique, and synthesize..."
                 : attachedFiles.length > 0
                 ? "Ask anything about the uploaded document(s)..."
                 : "Ask anything, or drag & drop documents (PDF, Word, Code, Data)..."
@@ -406,6 +411,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               >
                 <PenTool className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Writing</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectFocusMode("deep-research")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
+                  focusMode === "deep-research"
+                    ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+                title="Deep Research: Exhaustive multi-angle search across 30+ sources"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Deep Research</span>
               </button>
               <button
                 type="button"

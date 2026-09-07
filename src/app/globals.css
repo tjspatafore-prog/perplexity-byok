@@ -125,3 +125,75 @@ body {
   background-color: #202222;
   font-weight: 600;
 }
+
+/* Print styling for PDF generation */
+@media print {
+  @page {
+    margin: 20mm;
+  }
+  
+  body, main {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+  
+  .no-print,
+  nav,
+  aside,
+  header,
+  button,
+  .sticky {
+    display: none !important;
+  }
+  
+  .prose-perplexity {
+    color: #1f2937 !important;
+  }
+  
+  .prose-perplexity h1,
+  .prose-perplexity h2,
+  .prose-perplexity h3 {
+    color: #111827 !important;
+    page-break-after: avoid;
+  }
+  
+  .prose-perplexity code {
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  .prose-perplexity pre {
+    background: #f8fafc !important;
+    color: #1f2937 !important;
+    border: 1px solid #e2e8f0 !important;
+    page-break-inside: avoid;
+  }
+  
+  .prose-perplexity table {
+    page-break-inside: avoid;
+  }
+  
+  .prose-perplexity th {
+    background-color: #f1f5f9 !important;
+    color: #111827 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  
+  .prose-perplexity td {
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+  }
+  
+  .prose-perplexity blockquote {
+    border-left: 3px solid #0284c7 !important;
+    color: #475569 !important;
+  }
+
+  .citation-badge {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+  }
+}
+

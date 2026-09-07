@@ -20,9 +20,11 @@ import {
 import { Message, SearchResult } from "@/lib/types";
 import { SourcesGrid } from "./SourcesGrid";
 import { SwarmDialogueView } from "./SwarmDialogueView";
+import { ExportMenu } from "./ExportMenu";
 
 interface AnswerViewProps {
   message: Message;
+  query?: string;
   deepgramKey?: string;
   deepgramVoice?: string;
   onFollowUpClick: (question: string) => void;
@@ -31,6 +33,7 @@ interface AnswerViewProps {
 
 export const AnswerView: React.FC<AnswerViewProps> = ({
   message,
+  query,
   deepgramKey,
   deepgramVoice = "flux-brooke-en",
   onFollowUpClick,
@@ -170,7 +173,7 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
     <div className="space-y-6 pb-6 animate-fadeIn">
       {/* Search Steps Progress */}
       {message.searchSteps && message.searchSteps.length > 0 && (
-        <div className="p-3 rounded-xl bg-[#202222]/50 border border-[#272929] space-y-1.5 text-xs text-gray-400">
+        <div className="no-print p-3 rounded-xl bg-[#202222]/50 border border-[#272929] space-y-1.5 text-xs text-gray-400">
           {message.searchSteps.map((step, idx) => (
             <div key={idx} className="flex items-center gap-2">
               {step.status === "active" ? (
@@ -239,6 +242,12 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
                 Swarm Team
               </span>
             )}
+            {message.focusMode === "deep-research" && (
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 font-semibold">
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                Deep Research Whitepaper ({message.sources?.length || 30}+ sources)
+              </span>
+            )}
             {message.modelUsed && message.focusMode !== "swarm" && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#202222] text-gray-400 border border-[#2e3030]">
                 {message.modelUsed}
@@ -290,7 +299,7 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
       </div>
 
       {/* Action Footer Bar */}
-      <div className="pt-2 border-t border-[#262828] flex items-center justify-between text-xs text-gray-400">
+      <div className="no-print pt-2 border-t border-[#262828] flex items-center justify-between text-xs text-gray-400">
         <div className="flex items-center gap-2">
           {/* Copy Button */}
           <button
@@ -339,6 +348,15 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
               </>
             )}
           </button>
+
+          {/* Export & Share Menu */}
+          <ExportMenu
+            query={query || cleanedMarkdown.slice(0, 60)}
+            content={cleanedMarkdown}
+            sources={message.sources}
+            modelUsed={message.modelUsed}
+            createdAt={message.createdAt}
+          />
         </div>
 
         <div className="text-[11px] text-gray-500">
@@ -349,7 +367,7 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
 
       {/* Related Questions / Follow-ups */}
       {message.followUps && message.followUps.length > 0 && (
-        <div className="pt-4 space-y-2.5 border-t border-[#262828]">
+        <div className="no-print pt-4 space-y-2.5 border-t border-[#262828]">
           <span className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
             <ArrowRight className="w-3.5 h-3.5 text-perplexity-teal" /> Related Questions
           </span>

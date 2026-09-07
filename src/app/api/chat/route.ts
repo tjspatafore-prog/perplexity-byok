@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import { searchDuckDuckGo } from "@/lib/search/duckduckgo";
 import { enrichSourcesWithContent } from "@/lib/search/crawler";
+import { performDeepResearch } from "@/lib/search/deep-research";
 import { streamLLMResponse } from "@/lib/providers";
 import { runSwarmPipeline } from "@/lib/swarm/orchestrator";
 import { ApiKeys, FocusMode, SwarmAgentMessage, UploadedDocument } from "@/lib/types";
 
-export const maxDuration = 120; // Allow sufficient time for multi-agent swarm research + debate + synthesis
+export const maxDuration = 180; // Allow sufficient time for deep research & multi-agent swarm synthesis
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,9 +56,29 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          // 1. Web Search Step (if not purely writing mode)
+          // 1. Search & Research Step
           let sources: any[] = [];
-          if (focusMode !== "writing") {
+          if (focusMode === "deep-research") {
+            sendEvent("step", {
+              text: `Deep Research: Decomposing inquiry into multi-faceted investigation vectors...`,
+              status: "active",
+            });
+
+            const deepRes = await performDeepResearch(query, (progressStep) => {
+              sendEvent("step", {
+                text: progressStep,
+                status: "active",
+              });
+            });
+
+            sources = deepRes.sources;
+            sendEvent("sources", sources);
+
+            sendEvent("step", {
+              text: `Corpus verified: Assembling publication-grade deep report with ${modelId}...`,
+              status: "completed",
+            });
+          } else if (focusMode !== "writing") {
             const searchLabel =
               focusMode === "swarm"
                 ? `Swarm Mode: Gathering live web evidence for agent team...`
