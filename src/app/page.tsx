@@ -19,6 +19,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { AnswerView } from "@/components/AnswerView";
 import { SettingsModal } from "@/components/SettingsModal";
+import { AppBuilderView } from "@/components/builder/AppBuilderView";
+import { SuperAgentStudio } from "@/components/agents/SuperAgentStudio";
+import { GoogleWorkspaceModal } from "@/components/workspace/GoogleWorkspaceModal";
 import {
   ChatThread,
   Message,
@@ -27,6 +30,7 @@ import {
   AVAILABLE_MODELS,
   SwarmAgentMessage,
   UploadedDocument,
+  WorkspaceView,
 } from "@/lib/types";
 import {
   loadStoredSettings,
@@ -55,7 +59,9 @@ export default function Home() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("gemini-3.8-flash-high");
   const [focusMode, setFocusMode] = useState<FocusMode>("web");
+  const [currentView, setCurrentView] = useState<WorkspaceView>("search");
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -369,6 +375,9 @@ export default function Home() {
         onNewThread={handleNewThread}
         onDeleteThread={handleDeleteThread}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenGoogleWorkspace={() => setIsGoogleModalOpen(true)}
+        currentView={currentView}
+        onSelectView={setCurrentView}
         keys={settings.keys}
         isOpen={isSidebarOpen}
         onToggleOpen={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -381,13 +390,46 @@ export default function Home() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onNewThread={handleNewThread}
+          onOpenGoogleWorkspace={() => setIsGoogleModalOpen(true)}
+          currentView={currentView}
+          onSelectView={setCurrentView}
           keys={settings.keys}
           currentThreadTitle={activeThread?.title}
+          isGoogleConnected={!!settings.googleWorkspace?.isConnected}
         />
 
         {/* Workspace Body */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-4xl w-full mx-auto flex flex-col">
-          {!activeThread || activeThread.messages.length === 0 ? (
+        {currentView === "builder" ? (
+          <main className="flex-1 h-full overflow-hidden w-full">
+            <AppBuilderView
+              keys={settings.keys}
+              modelAliases={settings.modelAliases}
+              customAgents={settings.customAgents}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+          </main>
+        ) : currentView === "agents" ? (
+          <main className="flex-1 overflow-y-auto w-full">
+            <SuperAgentStudio
+              customAgents={settings.customAgents || []}
+              onSaveCustomAgents={(agents) => handleSaveSettings({ customAgents: agents })}
+              onLaunchBuilderWithAgent={() => {
+                setCurrentView("builder");
+              }}
+              onAddToSwarm={(modelId) => {
+                const current = settings.swarmRoster || [];
+                if (!current.includes(modelId)) {
+                  handleSaveSettings({ swarmRoster: [...current, modelId] });
+                  alert("Added model to your Swarm Team roster!");
+                } else {
+                  alert("This model is already in your Swarm Team.");
+                }
+              }}
+            />
+          </main>
+        ) : (
+          <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-4xl w-full mx-auto flex flex-col">
+            {!activeThread || activeThread.messages.length === 0 ? (
             /* Empty State Hero (Perplexity style) */
             <div className="flex-1 flex flex-col items-center justify-center text-center my-auto py-12 space-y-8 animate-fadeIn">
               <div className="space-y-3">
@@ -541,7 +583,8 @@ export default function Home() {
               </div>
             </div>
           )}
-        </main>
+          </main>
+        )}
       </div>
 
       {/* Settings Modal */}
@@ -550,6 +593,22 @@ export default function Home() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSaveSettings={handleSaveSettings}
+      />
+
+      {/* Google Workspace Modal */}
+      <GoogleWorkspaceModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        settings={settings.googleWorkspace}
+        onSaveSettings={(gw) => handleSaveSettings({ googleWorkspace: gw })}
+        exportContent={
+          activeThread?.messages?.length
+            ? {
+                title: activeThread.title,
+                content: activeThread.messages[activeThread.messages.length - 1]?.content || "",
+              }
+            : undefined
+        }
       />
     </div>
   );

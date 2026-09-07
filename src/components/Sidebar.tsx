@@ -12,8 +12,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  Zap,
+  Bot,
+  FolderPlus,
 } from "lucide-react";
-import { ChatThread, ApiKeys } from "@/lib/types";
+import { ChatThread, ApiKeys, WorkspaceView } from "@/lib/types";
 
 interface SidebarProps {
   threads: ChatThread[];
@@ -22,6 +25,9 @@ interface SidebarProps {
   onNewThread: () => void;
   onDeleteThread: (threadId: string) => void;
   onOpenSettings: () => void;
+  onOpenGoogleWorkspace: () => void;
+  currentView: WorkspaceView;
+  onSelectView: (view: WorkspaceView) => void;
   keys: ApiKeys;
   isOpen: boolean;
   onToggleOpen: () => void;
@@ -34,6 +40,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNewThread,
   onDeleteThread,
   onOpenSettings,
+  onOpenGoogleWorkspace,
+  currentView,
+  onSelectView,
   keys,
   isOpen,
   onToggleOpen,
@@ -57,19 +66,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed lg:static top-0 left-0 bottom-0 z-40 w-64 bg-[#141515] border-r border-[#242626] flex flex-col transition-all duration-300 ${
+        className={`fixed lg:static top-0 left-0 bottom-0 z-40 w-64 bg-[#11131a] border-r border-[#222634] flex flex-col transition-all duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Logo & New Thread */}
-        <div className="p-4 space-y-3 border-b border-[#202222]">
+        {/* Logo & Brand */}
+        <div className="p-4 space-y-3 border-b border-[#1e2230]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-perplexity-teal flex items-center justify-center font-bold text-[#121313] text-sm shadow-md">
-                *
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white text-sm shadow-md shadow-cyan-500/20">
+                ⚡
               </div>
               <span className="font-semibold text-sm tracking-tight text-white">
-                Perplexity <span className="text-perplexity-teal font-light">BYOK</span>
+                ai-byok<span className="text-cyan-400 font-light">.online</span>
               </span>
             </div>
 
@@ -81,20 +90,96 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
+          {/* New Search Thread Button */}
           <button
-            onClick={onNewThread}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#202222] hover:bg-[#282a2a] text-xs font-semibold text-white border border-[#2e3030] transition-colors group shadow-sm"
+            onClick={() => {
+              onSelectView("search");
+              onNewThread();
+            }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#1c202c] hover:bg-[#252a3a] text-xs font-semibold text-white border border-[#2b3042] transition-colors group shadow-sm"
           >
             <span className="flex items-center gap-2">
               <Plus className="w-4 h-4 text-perplexity-teal" /> New Thread
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#161717] text-gray-400 border border-[#262828]">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#13151c] text-gray-400 border border-[#232734]">
               Ctrl+K
             </span>
           </button>
         </div>
 
-        {/* Search Threads */}
+        {/* Workspace Mode Quick Switchers */}
+        <div className="px-3 py-2 border-b border-[#1e2230] space-y-1 text-xs">
+          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            Workspace Hub
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectView("search");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "search"
+                ? "bg-[#1f2434] text-perplexity-teal font-semibold border border-perplexity-teal/30"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <Search className="w-4 h-4" />
+            <span>Search & Research</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectView("builder");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "builder"
+                ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/40"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <span className="flex items-center gap-2.5">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span>App Builder Studio</span>
+            </span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">
+              Live
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectView("agents");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "agents"
+                ? "bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/40"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <Bot className="w-4 h-4 text-purple-400" />
+            <span>Super Agents</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onOpenGoogleWorkspace();
+              if (isOpen) onToggleOpen();
+            }}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-gray-400 hover:bg-[#181a24] hover:text-gray-200 transition-colors"
+          >
+            <FolderPlus className="w-4 h-4 text-blue-400" />
+            <span>Google Workspace</span>
+          </button>
+        </div>
+
+        {/* Search Threads Input */}
         <div className="px-3 pt-3">
           <div className="relative flex items-center">
             <Search className="w-3.5 h-3.5 absolute left-2.5 text-gray-500" />
@@ -102,8 +187,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search library..."
-              className="w-full bg-[#1b1c1c] border border-[#262828] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-perplexity-teal"
+              placeholder="Search past threads..."
+              className="w-full bg-[#181a24] border border-[#252a3a] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500"
             />
           </div>
         </div>
@@ -121,16 +206,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             filteredThreads.map((thread) => {
-              const isActive = thread.id === activeThreadId;
+              const isActive = thread.id === activeThreadId && currentView === "search";
               return (
                 <div
                   key={thread.id}
                   className={`group relative flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors cursor-pointer ${
                     isActive
-                      ? "bg-[#202222] text-white font-medium"
-                      : "text-gray-400 hover:bg-[#1b1c1c] hover:text-gray-200"
+                      ? "bg-[#1e2332] text-white font-medium"
+                      : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
                   }`}
-                  onClick={() => onSelectThread(thread.id)}
+                  onClick={() => {
+                    onSelectView("search");
+                    onSelectThread(thread.id);
+                  }}
                 >
                   <div className="flex items-center gap-2 min-w-0 pr-6">
                     <MessageSquare className="w-3.5 h-3.5 shrink-0 text-gray-500 group-hover:text-perplexity-teal" />
@@ -154,10 +242,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Footer: Settings */}
-        <div className="p-3 border-t border-[#202222] space-y-2">
+        <div className="p-3 border-t border-[#1e2230] space-y-2">
           <button
             onClick={onOpenSettings}
-            className="w-full flex items-center justify-between p-2 rounded-xl bg-[#1a1b1b] hover:bg-[#202222] border border-[#262828] text-xs text-gray-300 hover:text-white transition-colors"
+            className="w-full flex items-center justify-between p-2 rounded-xl bg-[#161822] hover:bg-[#202432] border border-[#252a3a] text-xs text-gray-300 hover:text-white transition-colors"
           >
             <div className="flex items-center gap-2">
               <Settings className="w-4 h-4 text-perplexity-teal" />

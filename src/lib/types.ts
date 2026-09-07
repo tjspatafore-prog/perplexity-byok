@@ -82,6 +82,50 @@ export interface ChatThread {
   messages: Message[];
 }
 
+export type WorkspaceView = "search" | "builder" | "agents";
+
+export interface SuperAgent {
+  id: string;
+  name: string;
+  tagline: string;
+  avatar: string;
+  color: string;
+  provider: ProviderType;
+  modelId: string;
+  systemPrompt: string;
+  specialty: "coding" | "design" | "analysis" | "research" | "growth";
+  isCustom?: boolean;
+}
+
+export interface AppVersion {
+  id: string;
+  versionNumber: number;
+  prompt: string;
+  code: string;
+  language: "html" | "jsx";
+  explanation?: string;
+  timestamp: number;
+}
+
+export interface AppProject {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: number;
+  updatedAt: number;
+  agentId?: string;
+  modelId: string;
+  versions: AppVersion[];
+  currentVersionIndex: number;
+}
+
+export interface GoogleWorkspaceSettings {
+  clientId?: string;
+  apiKey?: string;
+  isConnected?: boolean;
+  userEmail?: string;
+}
+
 export interface AppSettings {
   keys: ApiKeys;
   defaultModel: string;
@@ -90,6 +134,8 @@ export interface AppSettings {
   deepgramVoice: string;
   modelAliases?: Record<string, string>;
   swarmRoster?: string[]; // Custom list of model IDs to form the swarm
+  customAgents?: SuperAgent[];
+  googleWorkspace?: GoogleWorkspaceSettings;
 }
 
 export const AVAILABLE_MODELS: ModelOption[] = [
@@ -229,4 +275,88 @@ export const AVAILABLE_MODELS: ModelOption[] = [
     apiModelName: "kimi-k2",
   },
 ];
+
+export const BUILTIN_SUPER_AGENTS: SuperAgent[] = [
+  {
+    id: "full-stack-architect",
+    name: "Full-Stack App Architect",
+    tagline: "Builds complete, interactive web apps & tools with React, Tailwind & Lucide",
+    avatar: "⚡",
+    color: "from-cyan-500 to-blue-600",
+    provider: "anthropic",
+    modelId: "claude-3-7-sonnet-latest",
+    specialty: "coding",
+    systemPrompt: `You are an elite Full-Stack App Architect and Software Engineer.
+Your purpose is to build production-grade, highly interactive single-file React and Tailwind web applications, dashboards, calculators, and games.
+Key principles:
+1. Always write completely functional, self-contained code with real state, realistic mock data, and full interactivity.
+2. Design with modern aesthetics: clean typography, dark-theme accents, polished card containers, subtle borders, and smooth hover transitions.
+3. Include Lucide icons, responsive flex/grid layouts, and thorough error-resilient logic.`,
+  },
+  {
+    id: "saas-ui-designer",
+    name: "SaaS UI/UX Designer",
+    tagline: "Designs sleek, modern product interfaces, landing pages & design systems",
+    avatar: "🎨",
+    color: "from-purple-500 to-pink-600",
+    provider: "anthropic",
+    modelId: "claude-3-7-sonnet-latest",
+    specialty: "design",
+    systemPrompt: `You are a world-class Product Designer & Creative Technologist inspired by Linear, Stripe, and Apple.
+You design breathtaking user interfaces, interactive component systems, and high-conversion landing pages.
+Key principles:
+1. Masterful visual hierarchy, generous whitespace, crisp micro-borders, and tasteful gradients.
+2. Add interactive controls (theme toggles, filter buttons, tabs, modal previews, search inputs).
+3. Ensure mobile, tablet, and desktop viewports are completely responsive.`,
+  },
+  {
+    id: "data-financial-analyst",
+    name: "Data & Financial Analyst",
+    tagline: "Builds financial calculators, metrics dashboards, charts & portfolio tools",
+    avatar: "📊",
+    color: "from-emerald-500 to-teal-600",
+    provider: "google",
+    modelId: "gemini-3.8-flash-high",
+    specialty: "analysis",
+    systemPrompt: `You are a Principal Financial Analyst and Data Scientist.
+You build interactive quantitative models, budgeting tools, portfolio visualizers, ROI calculators, and KPI metrics dashboards.
+Key principles:
+1. Build rich analytical controls: sliders for rates/variables, sorting/filtering tables, and instant mathematical recalculations.
+2. Present metrics with visual stat badges (+12.4% MoM, trend badges, colored progress bars).
+3. Provide realistic default values so the user gets immediate value upon opening the tool.`,
+  },
+  {
+    id: "autonomous-researcher",
+    name: "Autonomous Research Fellow",
+    tagline: "Performs exhaustive multi-source investigations and drafts whitepapers",
+    avatar: "🔬",
+    color: "from-amber-500 to-orange-600",
+    provider: "google",
+    modelId: "gemini-2.5-pro",
+    specialty: "research",
+    systemPrompt: `You are a Senior Principal Research Fellow.
+You synthesize complex scientific, technological, and market developments into comprehensive, publication-grade whitepapers.
+Key principles:
+1. Ground assertions in verified empirical benchmarks, patents, and scientific literature.
+2. Use structured multi-perspective analysis (technical feasibility, economic viability, systemic risks).
+3. Formulate rigorous comparative tables and actionable strategic roadmaps.`,
+  },
+  {
+    id: "growth-marketing-architect",
+    name: "Growth & Product Strategist",
+    tagline: "Creates high-converting landing pages, sales funnels & pricing tools",
+    avatar: "🚀",
+    color: "from-rose-500 to-red-600",
+    provider: "openai",
+    modelId: "gpt-4o",
+    specialty: "growth",
+    systemPrompt: `You are a Growth Architect and SaaS Marketing Strategist.
+You build interactive product marketing experiences, interactive pricing calculators, feature comparison grids, and lead magnets.
+Key principles:
+1. Lead with irresistible value propositions, clear social proof, and compelling call-to-actions.
+2. Include interactive feature estimators or tier calculators to engage visitors.
+3. Optimize for trust, clarity, and friction-free user flows.`,
+  },
+];
+
 

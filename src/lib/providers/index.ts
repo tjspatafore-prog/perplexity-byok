@@ -13,6 +13,7 @@ export interface StreamParams {
   focusMode: FocusMode;
   keys: ApiKeys;
   modelAliases?: Record<string, string>;
+  customSystemPrompt?: string;
   onDelta: (chunk: string) => void;
 }
 
@@ -139,9 +140,10 @@ export async function streamLLMResponse({
   focusMode,
   keys,
   modelAliases = {},
+  customSystemPrompt,
   onDelta,
 }: StreamParams): Promise<void> {
-  const systemPrompt = buildSystemPrompt(sources, focusMode, files);
+  const systemPrompt = customSystemPrompt || buildSystemPrompt(sources, focusMode, files);
   const modelDef = AVAILABLE_MODELS.find((m) => m.id === modelId);
   const provider = modelDef?.provider || "google";
   // Exact model sent to API (respects any custom override in Settings)

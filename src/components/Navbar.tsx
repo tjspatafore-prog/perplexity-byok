@@ -1,60 +1,98 @@
 "use client";
 
 import React from "react";
-import { Menu, Settings, Key, Sparkles, Plus } from "lucide-react";
-import { ApiKeys } from "@/lib/types";
+import { Menu, Settings, Key, Sparkles, Plus, FolderPlus } from "lucide-react";
+import { ApiKeys, WorkspaceView } from "@/lib/types";
+import { NavigationTabs } from "./NavigationTabs";
 
 interface NavbarProps {
   onToggleSidebar: () => void;
   onOpenSettings: () => void;
   onNewThread: () => void;
+  onOpenGoogleWorkspace: () => void;
+  currentView: WorkspaceView;
+  onSelectView: (view: WorkspaceView) => void;
   keys: ApiKeys;
   currentThreadTitle?: string;
+  isGoogleConnected?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onToggleSidebar,
   onOpenSettings,
   onNewThread,
+  onOpenGoogleWorkspace,
+  currentView,
+  onSelectView,
   keys,
   currentThreadTitle,
+  isGoogleConnected = false,
 }) => {
   const configuredCount = Object.values(keys).filter(Boolean).length;
 
   return (
-    <header className="sticky top-0 z-20 h-14 bg-[#191a1a]/90 backdrop-blur-md border-b border-[#242626] px-4 flex items-center justify-between">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="sticky top-0 z-20 h-14 bg-[#14161f]/95 backdrop-blur-md border-b border-[#222634] px-4 flex items-center justify-between gap-2">
+      {/* Left: Hamburger & Brand/Title */}
+      <div className="flex items-center gap-2.5 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#202222] transition-colors lg:hidden"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#202534] transition-colors lg:hidden"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-xs sm:text-sm text-gray-300 truncate max-w-[200px] sm:max-w-md">
-            {currentThreadTitle || "Perplexity BYOK"}
+        <div className="hidden md:flex items-center gap-2 min-w-0">
+          <span className="font-semibold text-xs sm:text-sm text-gray-300 truncate max-w-[180px]">
+            {currentThreadTitle || "ai-byok.online"}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Center: Navigation Mode Tabs */}
+      <div className="flex-1 max-w-md mx-auto flex justify-center">
+        <NavigationTabs currentView={currentView} onSelectView={onSelectView} />
+      </div>
+
+      {/* Right Controls */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Google Workspace Button */}
         <button
-          onClick={onNewThread}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#202222] hover:bg-[#282a2a] text-gray-200 border border-[#2e3030] transition-colors"
+          onClick={onOpenGoogleWorkspace}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            isGoogleConnected
+              ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+              : "bg-[#1c202c] hover:bg-[#252a3a] text-gray-300 border-[#2b3142]"
+          }`}
+          title="Google Workspace (Drive, Docs, Sheets)"
         >
-          <Plus className="w-3.5 h-3.5 text-perplexity-teal" />
-          <span className="hidden sm:inline">New</span>
+          <FolderPlus className="w-3.5 h-3.5 text-blue-400" />
+          <span className="hidden sm:inline">Workspace</span>
         </button>
 
+        {/* New Thread (in search view) */}
+        {currentView === "search" && (
+          <button
+            onClick={onNewThread}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#1c202c] hover:bg-[#252a3a] text-gray-200 border border-[#2b3142] transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5 text-perplexity-teal" />
+            <span className="hidden sm:inline">New</span>
+          </button>
+        )}
+
+        {/* API Keys */}
         <button
           onClick={onOpenSettings}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#202222] hover:bg-[#282a2a] text-gray-200 border border-[#2e3030] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#1c202c] hover:bg-[#252a3a] text-gray-200 border border-[#2b3142] transition-colors"
           title="Configure API Keys"
         >
           <Key className="w-3.5 h-3.5 text-perplexity-teal" />
           <span className="hidden sm:inline">Keys</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span
+            className={`w-2 h-2 rounded-full ${
+              configuredCount > 0 ? "bg-emerald-400" : "bg-amber-400"
+            }`}
+          />
         </button>
       </div>
     </header>
