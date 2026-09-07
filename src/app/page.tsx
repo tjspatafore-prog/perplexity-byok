@@ -22,8 +22,9 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { AppBuilderView } from "@/components/builder/AppBuilderView";
 import { SuperAgentStudio } from "@/components/agents/SuperAgentStudio";
 import { GoogleWorkspaceModal } from "@/components/workspace/GoogleWorkspaceModal";
-import { AuthModal } from "@/components/auth/AuthModal";
+import { GoogleAccountModal } from "@/components/auth/GoogleAccountModal";
 import { DeviceSyncModal } from "@/components/sync/DeviceSyncModal";
+import { GoogleUserProfile, getGoogleUserSession } from "@/lib/sync/google-sync";
 import {
   ChatThread,
   Message,
@@ -66,17 +67,19 @@ export default function Home() {
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isDeviceSyncOpen, setIsDeviceSyncOpen] = useState<boolean>(false);
+  const [googleUser, setGoogleUser] = useState<GoogleUserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load initial settings and threads from localStorage on mount
+  // Load initial settings, threads, and google session from localStorage on mount
   useEffect(() => {
     const loadedSettings = loadStoredSettings();
     setSettings(loadedSettings);
     setSelectedModelId(loadedSettings.defaultModel || "gemini-3.8-flash-high");
     setFocusMode(loadedSettings.defaultFocusMode || "web");
+    setGoogleUser(getGoogleUserSession());
 
     const loadedThreads = loadThreads();
     setThreads(loadedThreads);
@@ -385,6 +388,7 @@ export default function Home() {
         currentView={currentView}
         onSelectView={setCurrentView}
         keys={settings.keys}
+        googleUser={googleUser}
         isOpen={isSidebarOpen}
         onToggleOpen={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -402,6 +406,7 @@ export default function Home() {
           currentView={currentView}
           onSelectView={setCurrentView}
           keys={settings.keys}
+          googleUser={googleUser}
           currentThreadTitle={activeThread?.title}
           isGoogleConnected={!!settings.googleWorkspace?.isConnected}
         />
@@ -619,10 +624,13 @@ export default function Home() {
         }
       />
 
-      {/* User Auth & Cloud Sync Modal */}
-      <AuthModal
+      {/* Google Account & Cloud Sync Modal */}
+      <GoogleAccountModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setGoogleUser(getGoogleUserSession());
+        }}
         settings={settings}
         onUpdateSettings={handleSaveSettings}
         onOpenDeviceSync={() => {
