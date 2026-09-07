@@ -15,6 +15,8 @@ import {
   Zap,
   Bot,
   FolderPlus,
+  QrCode,
+  Cloud,
 } from "lucide-react";
 import { ChatThread, ApiKeys, WorkspaceView } from "@/lib/types";
 
@@ -26,6 +28,8 @@ interface SidebarProps {
   onDeleteThread: (threadId: string) => void;
   onOpenSettings: () => void;
   onOpenGoogleWorkspace: () => void;
+  onOpenAuth: () => void;
+  onOpenDeviceSync: () => void;
   currentView: WorkspaceView;
   onSelectView: (view: WorkspaceView) => void;
   keys: ApiKeys;
@@ -41,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteThread,
   onOpenSettings,
   onOpenGoogleWorkspace,
+  onOpenAuth,
+  onOpenDeviceSync,
   currentView,
   onSelectView,
   keys,
@@ -176,6 +182,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <FolderPlus className="w-4 h-4 text-blue-400" />
             <span>Google Workspace</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onOpenDeviceSync();
+              if (isOpen) onToggleOpen();
+            }}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-gray-400 hover:bg-[#181a24] hover:text-cyan-300 transition-colors"
+          >
+            <QrCode className="w-4 h-4 text-cyan-400" />
+            <span>Fast QR Sync</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onOpenAuth();
+              if (isOpen) onToggleOpen();
+            }}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-gray-400 hover:bg-[#181a24] hover:text-purple-300 transition-colors"
+          >
+            <Cloud className="w-4 h-4 text-purple-400" />
+            <span>Cloud Account Sync</span>
           </button>
         </div>
 

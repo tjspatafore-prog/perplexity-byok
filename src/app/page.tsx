@@ -22,6 +22,8 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { AppBuilderView } from "@/components/builder/AppBuilderView";
 import { SuperAgentStudio } from "@/components/agents/SuperAgentStudio";
 import { GoogleWorkspaceModal } from "@/components/workspace/GoogleWorkspaceModal";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { DeviceSyncModal } from "@/components/sync/DeviceSyncModal";
 import {
   ChatThread,
   Message,
@@ -62,6 +64,8 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<WorkspaceView>("search");
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isDeviceSyncOpen, setIsDeviceSyncOpen] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -376,6 +380,8 @@ export default function Home() {
         onDeleteThread={handleDeleteThread}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenGoogleWorkspace={() => setIsGoogleModalOpen(true)}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenDeviceSync={() => setIsDeviceSyncOpen(true)}
         currentView={currentView}
         onSelectView={setCurrentView}
         keys={settings.keys}
@@ -391,6 +397,8 @@ export default function Home() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onNewThread={handleNewThread}
           onOpenGoogleWorkspace={() => setIsGoogleModalOpen(true)}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenDeviceSync={() => setIsDeviceSyncOpen(true)}
           currentView={currentView}
           onSelectView={setCurrentView}
           keys={settings.keys}
@@ -609,6 +617,26 @@ export default function Home() {
               }
             : undefined
         }
+      />
+
+      {/* User Auth & Cloud Sync Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleSaveSettings}
+        onOpenDeviceSync={() => {
+          setIsAuthModalOpen(false);
+          setIsDeviceSyncOpen(true);
+        }}
+      />
+
+      {/* 1-Click Fast Device Sync Modal (QR Code) */}
+      <DeviceSyncModal
+        isOpen={isDeviceSyncOpen}
+        onClose={() => setIsDeviceSyncOpen(false)}
+        settings={settings}
+        onImportSettings={handleSaveSettings}
       />
     </div>
   );

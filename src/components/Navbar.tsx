@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Menu, Settings, Key, Sparkles, Plus, FolderPlus } from "lucide-react";
+import { Menu, Settings, Key, Sparkles, Plus, FolderPlus, Cloud, QrCode } from "lucide-react";
 import { ApiKeys, WorkspaceView } from "@/lib/types";
 import { NavigationTabs } from "./NavigationTabs";
 
@@ -10,6 +10,8 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onNewThread: () => void;
   onOpenGoogleWorkspace: () => void;
+  onOpenAuth: () => void;
+  onOpenDeviceSync: () => void;
   currentView: WorkspaceView;
   onSelectView: (view: WorkspaceView) => void;
   keys: ApiKeys;
@@ -22,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onNewThread,
   onOpenGoogleWorkspace,
+  onOpenAuth,
+  onOpenDeviceSync,
   currentView,
   onSelectView,
   keys,
@@ -55,6 +59,26 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 shrink-0">
+        {/* Fast QR Sync Button */}
+        <button
+          onClick={onOpenDeviceSync}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-[#1c202c] hover:bg-[#252a3a] text-cyan-300 border border-cyan-500/30 transition-colors"
+          title="1-Click Device Sync (QR Code)"
+        >
+          <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden lg:inline">QR Sync</span>
+        </button>
+
+        {/* Cloud Account Sync Button */}
+        <button
+          onClick={onOpenAuth}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-[#1c202c] hover:bg-[#252a3a] text-purple-300 border border-purple-500/30 transition-colors"
+          title="User Account & Cloud Vault Sync"
+        >
+          <Cloud className="w-3.5 h-3.5 text-purple-400" />
+          <span className="hidden sm:inline">Account</span>
+        </button>
+
         {/* Google Workspace Button */}
         <button
           onClick={onOpenGoogleWorkspace}
