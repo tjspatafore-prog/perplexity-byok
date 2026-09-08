@@ -293,6 +293,12 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
           </button>
         </div>
 
+        {/* Live Sandbox Status Badge */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-medium">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Interactive Sandbox</span>
+        </div>
+
         {/* Visual Element Inspector & Action Buttons */}
         <div className="flex items-center gap-1.5">
           <button

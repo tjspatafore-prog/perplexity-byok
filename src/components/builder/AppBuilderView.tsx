@@ -39,6 +39,11 @@ import {
   ProjectFile,
 } from "@/lib/types";
 import { BUILDER_STARTER_TEMPLATES } from "@/lib/builder/system-prompt";
+import {
+  STARTER_TEMPLATES,
+  SAAS_DASHBOARD_CODE,
+  StarterTemplate,
+} from "@/lib/builder/starterTemplates";
 import { SandboxPreview, SelectedElementInfo } from "./SandboxPreview";
 import { CodeViewer } from "./CodeViewer";
 import { ProjectExplorer } from "./ProjectExplorer";
@@ -59,117 +64,8 @@ interface ChatMessage {
   timestamp: number;
 }
 
-// Sample initial code for immediate delightful preview
-const DEFAULT_INITIAL_CODE = `function App() {
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Architect Multi-Model Agent Engine", tag: "Backend", priority: "High", done: true },
-    { id: 2, title: "Design Base44 Split-Screen Sandbox", tag: "UI/UX", priority: "High", done: true },
-    { id: 3, title: "Connect Live Google Drive Picker", tag: "Cloud", priority: "Medium", done: false },
-    { id: 4, title: "Ship Autonomous App Studio v1.0", tag: "Launch", priority: "Urgent", done: false },
-  ]);
-  const [newTitle, setNewTitle] = useState("");
-  const [filter, setFilter] = useState("all");
-
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  };
-
-  const addTask = (e) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-    setTasks([...tasks, { id: Date.now(), title: newTitle.trim(), tag: "Feature", priority: "Medium", done: false }]);
-    setNewTitle("");
-  };
-
-  const filtered = tasks.filter(t => {
-    if (filter === "active") return !t.done;
-    if (filter === "completed") return t.done;
-    return true;
-  });
-
-  return (
-    <div className="min-h-screen bg-[#0d1117] text-gray-100 p-6 sm:p-10 font-sans">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-800 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-500/20">
-              ⚡
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">Autonomous Project Matrix</h1>
-              <p className="text-xs text-gray-400">Live Base44 Sandbox • Edit me or prompt the AI on the left</p>
-            </div>
-          </div>
-          <div className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">
-            {tasks.filter(t => t.done).length} / {tasks.length} Completed
-          </div>
-        </div>
-
-        {/* Input Bar */}
-        <form onSubmit={addTask} className="flex gap-2">
-          <input
-            type="text"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Add new high-impact mission task..."
-            className="flex-1 bg-[#161b22] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
-          />
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-md shadow-cyan-500/20"
-          >
-            Add Task
-          </button>
-        </form>
-
-        {/* Filters */}
-        <div className="flex items-center gap-2 text-xs">
-          {["all", "active", "completed"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={"px-3 py-1.5 rounded-lg capitalize transition-colors " + (filter === f ? "bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30" : "bg-[#161b22] text-gray-400 hover:text-white")}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-
-        {/* Task List */}
-        <div className="space-y-2.5">
-          {filtered.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => toggleTask(t.id)}
-              className={"flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer " + (t.done ? "bg-[#161b22]/50 border-gray-800 text-gray-500 line-through" : "bg-[#161b22] border-gray-800 hover:border-gray-700 text-gray-200")}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={t.done}
-                  onChange={() => {}}
-                  className="w-4 h-4 rounded text-cyan-500 focus:ring-0 cursor-pointer bg-gray-800 border-gray-700"
-                />
-                <span className="text-sm font-medium">{t.title}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
-                  {t.tag}
-                </span>
-                <span className={"text-[10px] px-2 py-0.5 rounded-full " + (t.priority === "Urgent" ? "bg-red-500/20 text-red-400 border border-red-500/30" : t.priority === "High" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-blue-500/20 text-blue-400 border border-blue-500/30")}>
-                  {t.priority}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);`;
+// Default initial code from pre-built starter templates
+const DEFAULT_INITIAL_CODE = SAAS_DASHBOARD_CODE;
 
 export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   keys,
@@ -180,7 +76,7 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   const allAgents = [...BUILTIN_SUPER_AGENTS, ...customAgents];
 
   // Active Project State
-  const [projectTitle, setProjectTitle] = useState("Autonomous Task Matrix");
+  const [projectTitle, setProjectTitle] = useState("Pulse Operations & Analytics");
   const [selectedAgentId, setSelectedAgentId] = useState<string>("full-stack-architect");
   const [selectedModelId, setSelectedModelId] = useState<string>("claude-3-7-sonnet-latest");
   const [activeTab, setActiveTab] = useState<"preview" | "code" | "files">("preview");
@@ -203,10 +99,10 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
     {
       id: "v1",
       versionNumber: 1,
-      prompt: "Initial Matrix prototype",
+      prompt: "Initial SaaS KPI Dashboard",
       code: DEFAULT_INITIAL_CODE,
       language: "jsx",
-      explanation: "Starter interactive project management application with real state and filtering.",
+      explanation: "Live interactive SaaS operations dashboard with ARR simulation, financial metrics, and transaction ledger.",
       timestamp: Date.now(),
     },
   ]);
@@ -239,14 +135,14 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
       id: "package-json",
       name: "package.json",
       path: "package.json",
-      content: `{\n  "name": "autonomous-matrix-app",\n  "version": "1.0.0",\n  "private": true,\n  "dependencies": {\n    "react": "^18.3.1",\n    "react-dom": "^18.3.1",\n    "lucide-react": "^0.475.0"\n  }\n}`,
+      content: `{\n  "name": "pulse-operations-app",\n  "version": "1.0.0",\n  "private": true,\n  "dependencies": {\n    "react": "^18.3.1",\n    "react-dom": "^18.3.1",\n    "lucide-react": "^0.475.0"\n  }\n}`,
       language: "json",
     },
     {
       id: "readme-md",
       name: "README.md",
       path: "README.md",
-      content: `# Autonomous Task Matrix\n\nBuilt live with [ai-byok.online](https://ai-byok.online) in Base44 Studio mode.\n\n## Quick Start\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\``,
+      content: `# Pulse Operations & Analytics\n\nBuilt live with [ai-byok.online](https://ai-byok.online) in Base44 Studio mode.\n\n## Quick Start\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\``,
       language: "md",
     },
   ]);
@@ -519,6 +415,43 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
     setTimeout(() => setCopiedGitCmd(false), 2000);
   };
 
+  // Switch Starter Templates (SaaS Dashboard, Kanban, E-Commerce, Blank Canvas)
+  const handleSwitchTemplate = (templateId: string) => {
+    const tpl = STARTER_TEMPLATES.find((t) => t.id === templateId);
+    if (!tpl) return;
+
+    setProjectTitle(tpl.title);
+    const newVersion: AppVersion = {
+      id: "v" + (versions.length + 1),
+      versionNumber: versions.length + 1,
+      prompt: `Switched template to ${tpl.name}`,
+      code: tpl.code,
+      language: "jsx",
+      explanation: tpl.explanation,
+      timestamp: Date.now(),
+    };
+    setVersions((prev) => [...prev, newVersion]);
+    setCurrentVersionIndex(versions.length);
+
+    // Update Virtual Files
+    setProjectFiles((prev) =>
+      prev.map((f) => (f.id === "main-app" ? { ...f, content: tpl.code } : f))
+    );
+
+    // Add chat message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: "msg-" + Date.now(),
+        role: "assistant",
+        content: `Switched template to **${tpl.name}** (${tpl.icon}). You can test its interactive state in the **Live Preview** on the right, or prompt me below to customize it!`,
+        mode: "build",
+        versionNumber: versions.length + 1,
+        timestamp: Date.now(),
+      },
+    ]);
+  };
+
   // Determine current active code (live stream code or selected version code)
   const displayCode =
     isStreaming && streamingRawText && builderMode === "build"
@@ -533,7 +466,7 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
       <div className="w-full lg:w-[42%] flex flex-col h-full border-r border-[#222634] bg-[#12141a]">
         {/* Top Studio Bar */}
         <div className="p-3 border-b border-[#222634] space-y-2 bg-[#161922]">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                 <Zap className="w-4 h-4" />
@@ -548,20 +481,39 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
               </div>
             </div>
 
-            {/* Version Selector */}
-            <div className="flex items-center gap-1 bg-[#1c202c] px-2 py-1 rounded-lg border border-[#2b3042] text-xs">
-              <History className="w-3.5 h-3.5 text-gray-400" />
-              <select
-                value={currentVersionIndex}
-                onChange={(e) => setCurrentVersionIndex(Number(e.target.value))}
-                className="bg-transparent text-gray-200 focus:outline-none cursor-pointer text-xs"
-              >
-                {versions.map((v, idx) => (
-                  <option key={v.id} value={idx} className="bg-[#1c202c] text-gray-200">
-                    v{v.versionNumber}: {v.prompt.slice(0, 24)}...
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2">
+              {/* Starter Template Switcher */}
+              <div className="flex items-center gap-1 bg-[#1c202c] px-2 py-1 rounded-lg border border-[#2b3042] text-xs">
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <select
+                  onChange={(e) => handleSwitchTemplate(e.target.value)}
+                  defaultValue="saas"
+                  className="bg-transparent text-gray-200 focus:outline-none cursor-pointer text-xs"
+                  title="Switch starter template"
+                >
+                  {STARTER_TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id} className="bg-[#1c202c] text-gray-200">
+                      {t.icon} {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Version Selector */}
+              <div className="flex items-center gap-1 bg-[#1c202c] px-2 py-1 rounded-lg border border-[#2b3042] text-xs">
+                <History className="w-3.5 h-3.5 text-gray-400" />
+                <select
+                  value={currentVersionIndex}
+                  onChange={(e) => setCurrentVersionIndex(Number(e.target.value))}
+                  className="bg-transparent text-gray-200 focus:outline-none cursor-pointer text-xs"
+                >
+                  {versions.map((v, idx) => (
+                    <option key={v.id} value={idx} className="bg-[#1c202c] text-gray-200">
+                      v{v.versionNumber}: {v.prompt.slice(0, 24)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
