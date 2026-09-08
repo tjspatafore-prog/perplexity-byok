@@ -21,6 +21,7 @@ import { Message, SearchResult } from "@/lib/types";
 import { SourcesGrid } from "./SourcesGrid";
 import { SwarmDialogueView } from "./SwarmDialogueView";
 import { ExportMenu } from "./ExportMenu";
+import { PdfViewerModal } from "./PdfViewerModal";
 
 interface AnswerViewProps {
   message: Message;
@@ -43,6 +44,7 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
   const [activeCitation, setActiveCitation] = useState<number | null>(null);
+  const [activePdfSource, setActivePdfSource] = useState<SearchResult | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleCopy = () => {
@@ -223,7 +225,21 @@ export const AnswerView: React.FC<AnswerViewProps> = ({
 
       {/* Sources Grid */}
       {message.sources && message.sources.length > 0 && (
-        <SourcesGrid sources={message.sources} activeCitation={activeCitation} />
+        <SourcesGrid
+          sources={message.sources}
+          activeCitation={activeCitation}
+          onOpenPdf={(source) => setActivePdfSource(source)}
+        />
+      )}
+
+      {/* In-Browser PDF Reader Modal */}
+      {activePdfSource && (
+        <PdfViewerModal
+          url={activePdfSource.url}
+          title={activePdfSource.title}
+          domain={activePdfSource.domain}
+          onClose={() => setActivePdfSource(null)}
+        />
       )}
 
       {/* Multi-Agent Swarm Debate / Dialogue */}
