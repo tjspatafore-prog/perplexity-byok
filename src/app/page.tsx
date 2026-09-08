@@ -21,6 +21,9 @@ import { AnswerView } from "@/components/AnswerView";
 import { SettingsModal } from "@/components/SettingsModal";
 import { AppBuilderView } from "@/components/builder/AppBuilderView";
 import { SuperAgentStudio } from "@/components/agents/SuperAgentStudio";
+import { DatabaseStudio } from "@/components/database/DatabaseStudio";
+import { DesktopBridgeView } from "@/components/desktop/DesktopBridgeView";
+import { BackgroundAgentsView } from "@/components/monitors/BackgroundAgentsView";
 import { GoogleWorkspaceModal } from "@/components/workspace/GoogleWorkspaceModal";
 import { GoogleAccountModal } from "@/components/auth/GoogleAccountModal";
 import { DeviceSyncModal } from "@/components/sync/DeviceSyncModal";
@@ -418,6 +421,27 @@ export default function Home() {
               keys={settings.keys}
               modelAliases={settings.modelAliases}
               customAgents={settings.customAgents}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+          </main>
+        ) : currentView === "database" ? (
+          <main className="flex-1 h-full overflow-hidden w-full">
+            <DatabaseStudio
+              keys={settings.keys}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+          </main>
+        ) : currentView === "desktop" ? (
+          <main className="flex-1 h-full overflow-hidden w-full">
+            <DesktopBridgeView
+              keys={settings.keys}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+          </main>
+        ) : currentView === "monitors" ? (
+          <main className="flex-1 h-full overflow-y-auto w-full">
+            <BackgroundAgentsView
+              keys={settings.keys}
               onOpenSettings={() => setIsSettingsOpen(true)}
             />
           </main>

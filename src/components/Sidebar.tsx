@@ -162,6 +162,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => {
+              onSelectView("database");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "database"
+                ? "bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/40"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <span className="text-amber-400 font-mono">🗄️</span>
+            <span>Database Studio</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectView("desktop");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "desktop"
+                ? "bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/40"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <span className="text-emerald-400 font-mono">💻</span>
+            <span>Desktop Bridge</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectView("monitors");
+              if (isOpen) onToggleOpen();
+            }}
+            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+              currentView === "monitors"
+                ? "bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/40"
+                : "text-gray-400 hover:bg-[#181a24] hover:text-gray-200"
+            }`}
+          >
+            <span className="text-indigo-400 font-mono">📡</span>
+            <span>Background Monitors</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
               onSelectView("agents");
               if (isOpen) onToggleOpen();
             }}

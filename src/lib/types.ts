@@ -82,7 +82,13 @@ export interface ChatThread {
   messages: Message[];
 }
 
-export type WorkspaceView = "search" | "builder" | "agents";
+export type WorkspaceView =
+  | "search"
+  | "builder"
+  | "agents"
+  | "database"
+  | "desktop"
+  | "monitors";
 
 export interface SuperAgent {
   id: string;
@@ -359,4 +365,48 @@ Key principles:
   },
 ];
 
+export interface ProjectFile {
+  id: string;
+  name: string;
+  path: string;
+  content: string;
+  language: "jsx" | "js" | "json" | "sql" | "md" | "css";
+}
 
+export interface SqlColumn {
+  name: string;
+  type: string;
+}
+
+export interface SqlQueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount: number;
+  executionTimeMs: number;
+  error?: string;
+}
+
+export interface DatabaseTable {
+  name: string;
+  columns: SqlColumn[];
+  rows: any[][];
+}
+
+export interface TerminalLog {
+  id: string;
+  type: "command" | "output" | "error" | "info";
+  content: string;
+  timestamp: number;
+}
+
+export interface ScheduledMonitor {
+  id: string;
+  name: string;
+  schedule: string;
+  targetQuery: string;
+  focusArea: "ai-research" | "web-watcher" | "code-audit";
+  status: "active" | "paused" | "running";
+  lastRun?: number;
+  lastFinding?: string;
+  findingsCount: number;
+}

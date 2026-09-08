@@ -26,6 +26,8 @@ import {
   Terminal,
   FileCode,
   X,
+  MousePointerClick,
+  FolderOpen,
 } from "lucide-react";
 import {
   AppProject,
@@ -34,10 +36,12 @@ import {
   ApiKeys,
   BUILTIN_SUPER_AGENTS,
   AVAILABLE_MODELS,
+  ProjectFile,
 } from "@/lib/types";
 import { BUILDER_STARTER_TEMPLATES } from "@/lib/builder/system-prompt";
-import { SandboxPreview } from "./SandboxPreview";
+import { SandboxPreview, SelectedElementInfo } from "./SandboxPreview";
 import { CodeViewer } from "./CodeViewer";
+import { ProjectExplorer } from "./ProjectExplorer";
 
 interface AppBuilderViewProps {
   keys: ApiKeys;
@@ -179,10 +183,13 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   const [projectTitle, setProjectTitle] = useState("Autonomous Task Matrix");
   const [selectedAgentId, setSelectedAgentId] = useState<string>("full-stack-architect");
   const [selectedModelId, setSelectedModelId] = useState<string>("claude-3-7-sonnet-latest");
-  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [activeTab, setActiveTab] = useState<"preview" | "code" | "files">("preview");
 
   // Base44 Conversational Mode: "discuss" (brainstorm & architect) vs "build" (synthesize live app)
   const [builderMode, setBuilderMode] = useState<"discuss" | "build">("build");
+
+  // Visual Click-to-Edit Selected Element from Sandbox
+  const [selectedElement, setSelectedElement] = useState<SelectedElementInfo | null>(null);
 
   // Emergent Multi-Agent Task Progress Stage (0 = idle, 1 = spec, 2 = components, 3 = interactivity, 4 = verified)
   const [checklistStage, setChecklistStage] = useState<number>(0);
@@ -205,13 +212,53 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   ]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState<number>(0);
 
+  // Virtual Multi-File Codebase
+  const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([
+    {
+      id: "main-app",
+      name: "App.jsx",
+      path: "src/App.jsx",
+      content: DEFAULT_INITIAL_CODE,
+      language: "jsx",
+    },
+    {
+      id: "header-comp",
+      name: "Header.jsx",
+      path: "src/components/Header.jsx",
+      content: `export function Header({ title, completedCount, totalCount }) {\n  return (\n    <div className="flex items-center justify-between border-b border-gray-800 pb-5">\n      <h1 className="text-xl font-bold text-white">{title}</h1>\n      <div className="text-xs px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">\n        {completedCount} / {totalCount} Completed\n      </div>\n    </div>\n  );\n}`,
+      language: "jsx",
+    },
+    {
+      id: "schema-sql",
+      name: "schema.sql",
+      path: "src/db/schema.sql",
+      content: `-- Project Relational Database Schema\nCREATE TABLE IF NOT EXISTS tasks (\n  id INTEGER PRIMARY KEY,\n  title TEXT NOT NULL,\n  tag TEXT DEFAULT 'Feature',\n  priority TEXT DEFAULT 'Medium',\n  done BOOLEAN DEFAULT false,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);`,
+      language: "sql",
+    },
+    {
+      id: "package-json",
+      name: "package.json",
+      path: "package.json",
+      content: `{\n  "name": "autonomous-matrix-app",\n  "version": "1.0.0",\n  "private": true,\n  "dependencies": {\n    "react": "^18.3.1",\n    "react-dom": "^18.3.1",\n    "lucide-react": "^0.475.0"\n  }\n}`,
+      language: "json",
+    },
+    {
+      id: "readme-md",
+      name: "README.md",
+      path: "README.md",
+      content: `# Autonomous Task Matrix\n\nBuilt live with [ai-byok.online](https://ai-byok.online) in Base44 Studio mode.\n\n## Quick Start\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\``,
+      language: "md",
+    },
+  ]);
+  const [activeFileId, setActiveFileId] = useState<string>("main-app");
+
   // Chat conversation
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "m1",
       role: "assistant",
       content:
-        "Welcome to the Base44 App & Website Builder Studio! Toggle between **Discuss Mode** (brainstorm architecture without touching code) and **Build Mode** (live code synthesis), or choose a template below to get started.",
+        "Welcome to the Base44 App & Website Builder Studio! Toggle between **Discuss Mode** (brainstorm architecture without touching code) and **Build Mode** (live code synthesis), or click **'Inspect Element'** in the preview to edit any visual component directly.",
       mode: "build",
       versionNumber: 1,
       timestamp: Date.now(),
@@ -228,6 +275,15 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingRawText]);
+
+  // Sync main app code to projectFiles
+  useEffect(() => {
+    if (currentVersion?.code) {
+      setProjectFiles((prev) =>
+        prev.map((f) => (f.id === "main-app" ? { ...f, content: currentVersion.code } : f))
+      );
+    }
+  }, [currentVersion?.code]);
 
   // Helper to extract code from markdown block
   const extractCodeFromMarkdown = (text: string): { code: string; explanation: string } => {
@@ -246,8 +302,16 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
   };
 
   const handleSendMessage = async (customPrompt?: string, forceMode?: "discuss" | "build") => {
-    const userPrompt = (customPrompt || promptInput).trim();
-    if (!userPrompt || isStreaming) return;
+    const rawUserPrompt = (customPrompt || promptInput).trim();
+    if (!rawUserPrompt || isStreaming) return;
+
+    // If an element was inspected, inject target context into prompt
+    let userPrompt = rawUserPrompt;
+    if (selectedElement) {
+      userPrompt = `[Targeted Element: <${selectedElement.tag} ${
+        selectedElement.className ? `class="${selectedElement.className.slice(0, 50)}"` : ""
+      }> with text "${selectedElement.text}"]: ${rawUserPrompt}`;
+    }
 
     const activeMode = forceMode || builderMode;
 
@@ -265,6 +329,7 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
     }
 
     setPromptInput("");
+    setSelectedElement(null);
     setIsStreaming(true);
     setStreamingRawText("");
     setChecklistStage(1);
@@ -363,7 +428,7 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
         const newVersion: AppVersion = {
           id: `v${newVersionNumber}`,
           versionNumber: newVersionNumber,
-          prompt: userPrompt,
+          prompt: rawUserPrompt,
           code: newCode || currentVersion.code,
           language: "jsx",
           explanation: explanation || "Application updated with requested features.",
@@ -427,6 +492,22 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAllProjectFiles = () => {
+    projectFiles.forEach((file, index) => {
+      setTimeout(() => {
+        const blob = new Blob([file.content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", file.name);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, index * 200);
+    });
   };
 
   const handleCopyGitCommands = () => {
@@ -748,8 +829,32 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
           </div>
         )}
 
-        {/* Prompt Input Box */}
-        <div className="p-3 border-t border-[#222634] bg-[#161922]">
+        {/* Prompt Input Box with Visual Element Inspector Chip */}
+        <div className="p-3 border-t border-[#222634] bg-[#161922] space-y-2">
+          {/* Target Element Chip */}
+          {selectedElement && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-cyan-950/60 border border-cyan-800/50 rounded-xl text-[11px] text-cyan-200 animate-fadeIn">
+              <div className="flex items-center gap-1.5 truncate">
+                <MousePointerClick className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />
+                <span className="font-semibold text-white">Targeted Component:</span>
+                <span className="font-mono bg-cyan-900/60 px-1.5 py-0.5 rounded text-cyan-300 font-bold">
+                  &lt;{selectedElement.tag}&gt;
+                </span>
+                {selectedElement.text && (
+                  <span className="text-gray-300 truncate max-w-[140px]">
+                    &quot;{selectedElement.text}&quot;
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedElement(null)}
+                className="text-gray-400 hover:text-white px-1.5 py-0.5 text-[10px] rounded hover:bg-white/10"
+              >
+                ✕ Clear
+              </button>
+            </div>
+          )}
+
           <div className="relative flex items-center bg-[#101218] rounded-xl border border-[#262c3e] focus-within:border-cyan-500 transition-colors">
             <textarea
               value={promptInput}
@@ -761,7 +866,9 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
                 }
               }}
               placeholder={
-                builderMode === "discuss"
+                selectedElement
+                  ? `Instruct ${currentAgent.name} how to modify <${selectedElement.tag}> (e.g. "Make this button gradient blue and add an icon")...`
+                  : builderMode === "discuss"
                   ? `Ask ${currentAgent.name} to brainstorm features, compare frameworks, or design UX flows...`
                   : `Instruct ${currentAgent.name} to build (e.g. "Add dark mode toggle", "Make cards drag-and-drop")...`
               }
@@ -788,7 +895,7 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
         </div>
       </div>
 
-      {/* RIGHT PANE: Live Interactive Sandbox & Code Inspector (58% width) */}
+      {/* RIGHT PANE: Live Interactive Sandbox & Multi-File Explorer (58% width) */}
       <div className="flex-1 flex flex-col h-full bg-[#0a0b0e] overflow-hidden">
         {/* Right Pane Navigation Header */}
         <div className="flex items-center justify-between px-4 py-2 bg-[#12141a] border-b border-[#222634] text-xs">
@@ -815,7 +922,19 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
               }`}
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span>Code Inspector</span>
+              <span>Single JSX</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("files")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors ${
+                activeTab === "files"
+                  ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Project Files ({projectFiles.length})</span>
             </button>
           </div>
 
@@ -840,11 +959,39 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
               code={displayCode}
               isStreaming={isStreaming}
               onAskFix={handleFixError}
+              onSelectElement={(el) => setSelectedElement(el)}
             />
-          ) : (
+          ) : activeTab === "code" ? (
             <CodeViewer
               code={displayCode}
               filename={`${projectTitle.toLowerCase().replace(/[^a-z0-9]/g, "_")}.jsx`}
+            />
+          ) : (
+            <ProjectExplorer
+              files={projectFiles}
+              activeFileId={activeFileId}
+              onSelectFile={setActiveFileId}
+              onUpdateFileContent={(id, content) => {
+                setProjectFiles((prev) =>
+                  prev.map((f) => (f.id === id ? { ...f, content } : f))
+                );
+              }}
+              onAddFile={(name, path) => {
+                const newFile: ProjectFile = {
+                  id: `f-${Date.now()}`,
+                  name,
+                  path,
+                  content: `// ${name}\nexport default function ${name.replace(/[^a-zA-Z0-9]/g, "")}() {\n  return <div>New Component</div>;\n}`,
+                  language: name.endsWith(".sql") ? "sql" : name.endsWith(".json") ? "json" : "jsx",
+                };
+                setProjectFiles((prev) => [...prev, newFile]);
+                setActiveFileId(newFile.id);
+              }}
+              onDeleteFile={(id) => {
+                setProjectFiles((prev) => prev.filter((f) => f.id !== id));
+                setActiveFileId("main-app");
+              }}
+              onDownloadAll={handleDownloadAllProjectFiles}
             />
           )}
         </div>
@@ -892,13 +1039,21 @@ export const AppBuilderView: React.FC<AppBuilderViewProps> = ({
                       Stand-alone React 18 component with Tailwind CSS & Lucide Icons
                     </div>
                   </div>
-                  <button
-                    onClick={handleDownloadAppFile}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-[#12131a] font-bold text-xs transition-colors shrink-0"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download JSX</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleDownloadAppFile}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-[#12131a] font-bold text-xs transition-colors shrink-0"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download App</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadAllProjectFiles}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#202538] hover:bg-[#283048] text-white text-xs transition-colors shrink-0 border border-[#2f3852]"
+                    >
+                      <span>All Files</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

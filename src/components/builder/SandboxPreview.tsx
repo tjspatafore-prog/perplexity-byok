@@ -11,12 +11,21 @@ import {
   CheckCircle2,
   Maximize2,
   Code2,
+  MousePointerClick,
 } from "lucide-react";
+
+export interface SelectedElementInfo {
+  tag: string;
+  text: string;
+  className: string;
+  id: string;
+}
 
 interface SandboxPreviewProps {
   code: string;
   isStreaming?: boolean;
   onAskFix?: (errorMessage: string) => void;
+  onSelectElement?: (element: SelectedElementInfo) => void;
 }
 
 type DeviceMode = "desktop" | "tablet" | "mobile";
@@ -25,30 +34,47 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
   code,
   isStreaming = false,
   onAskFix,
+  onSelectElement,
 }) => {
   const [device, setDevice] = useState<DeviceMode>("desktop");
   const [key, setKey] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [isInspectMode, setIsInspectMode] = useState<boolean>(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Listen for errors and console messages from the sandboxed iframe
+  // Listen for errors, console messages, and element inspection from the sandboxed iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.data && e.data.type === "SANDBOX_ERROR") {
         setError(e.data.message);
       } else if (e.data && e.data.type === "SANDBOX_LOG") {
         setLogs((prev) => [...prev.slice(-19), e.data.message]);
+      } else if (e.data && e.data.type === "ELEMENT_SELECTED") {
+        if (onSelectElement) {
+          onSelectElement(e.data.element);
+        }
+        setIsInspectMode(false);
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [onSelectElement]);
 
   // Clear errors on fresh code
   useEffect(() => {
     setError(null);
   }, [code]);
+
+  // Post inspect mode status to iframe
+  useEffect(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: "SET_INSPECT_MODE", active: isInspectMode },
+        "*"
+      );
+    }
+  }, [isInspectMode]);
 
   const handleRefresh = () => {
     setError(null);
@@ -68,14 +94,15 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
       return `<!DOCTYPE html><html><body style="background:#0f1117;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><p>Waiting for code to generate...</p></body></html>`;
     }
 
-    const isFullHtml = sourceCode.trim().toLowerCase().startsWith("<!doctype") ||
-                       sourceCode.trim().toLowerCase().startsWith("<html");
+    const isFullHtml =
+      sourceCode.trim().toLowerCase().startsWith("<!doctype") ||
+      sourceCode.trim().toLowerCase().startsWith("<html");
 
     if (isFullHtml) {
       return sourceCode;
     }
 
-    // Wrap React/JSX or HTML fragment into a complete self-executing environment
+    // Wrap React/JSX into self-executing environment
     const safeCode = sourceCode.replace(/<\/script>/gi, "<\\/script>");
 
     return `<!DOCTYPE html>
@@ -115,7 +142,6 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
       color: #f1f5f9;
       min-height: 100vh;
     }
-    /* Custom scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
@@ -125,7 +151,46 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
   <div id="root"></div>
 
   <script>
-    // Capture runtime exceptions and communicate back to parent sandbox
+    window.__INSPECT_MODE__ = ${isInspectMode ? "true" : "false"};
+
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'SET_INSPECT_MODE') {
+        window.__INSPECT_MODE__ = !!e.data.active;
+      }
+    });
+
+    document.addEventListener('mouseover', function(e) {
+      if (!window.__INSPECT_MODE__) return;
+      var target = e.target;
+      if (!target || target.id === 'root') return;
+      target.style.outline = '2px dashed #06b6d4';
+      target.style.cursor = 'crosshair';
+    });
+
+    document.addEventListener('mouseout', function(e) {
+      if (!window.__INSPECT_MODE__) return;
+      var target = e.target;
+      if (target) target.style.outline = '';
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!window.__INSPECT_MODE__) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var target = e.target;
+      if (!target || target.id === 'root') return;
+      var text = (target.innerText || target.textContent || '').trim().slice(0, 40);
+      var tag = target.tagName.toLowerCase();
+      var className = target.className || '';
+      var id = target.id || '';
+      target.style.outline = '';
+      window.parent.postMessage({
+        type: 'ELEMENT_SELECTED',
+        element: { tag: tag, text: text, className: typeof className === 'string' ? className : '', id: id }
+      }, '*');
+    }, true);
+
+    // Capture runtime exceptions
     window.onerror = function(msg, url, line, col, err) {
       window.parent.postMessage({
         type: 'SANDBOX_ERROR',
@@ -135,13 +200,14 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
     };
 
     // Forward console logs
-    const origLog = console.log;
-    console.log = function(...args) {
+    var origLog = console.log;
+    console.log = function() {
+      var args = Array.prototype.slice.call(arguments);
       origLog.apply(console, args);
       try {
         window.parent.postMessage({
           type: 'SANDBOX_LOG',
-          message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+          message: args.map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')
         }, '*');
       } catch(e) {}
     };
@@ -227,72 +293,93 @@ export const SandboxPreview: React.FC<SandboxPreviewProps> = ({
           </button>
         </div>
 
-        {/* Live Status Badge */}
-        <div className="flex items-center gap-2">
-          {isStreaming ? (
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-              Compiling code...
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px]">
-              <CheckCircle2 className="w-3 h-3" />
-              Interactive Live Sandbox
-            </span>
-          )}
-        </div>
-
-        {/* Actions */}
+        {/* Visual Element Inspector & Action Buttons */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            onClick={() => setIsInspectMode(!isInspectMode)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all text-xs ${
+              isInspectMode
+                ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/50 shadow-sm animate-pulse"
+                : "text-gray-400 hover:text-gray-200 hover:bg-[#202432]"
+            }`}
+            title="Click to inspect any element in the preview and target an AI edit"
+          >
+            <MousePointerClick className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">
+              {isInspectMode ? "Click Element to Edit" : "Inspect Element"}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleRefresh}
-            className="p-1.5 rounded-lg bg-[#202430] hover:bg-[#2a3040] text-gray-300 hover:text-white transition-colors"
-            title="Refresh Sandbox"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#202432] transition-colors"
+            title="Reload Sandbox"
           >
             <RotateCw className="w-3.5 h-3.5" />
           </button>
+
           <button
             type="button"
             onClick={handleOpenNewTab}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[#202430] hover:bg-[#2a3040] text-gray-300 hover:text-white transition-colors text-[11px]"
-            title="Open in Full Window / New Tab"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#202432] transition-colors"
+            title="Open in new window"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">Open New Tab</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Error Alert Bar (Self-Healing prompt trigger) */}
-      {error && (
-        <div className="flex items-center justify-between px-4 py-2.5 bg-rose-500/15 border-b border-rose-500/30 text-xs text-rose-300 animate-fadeIn">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-            <span className="truncate font-mono">{error}</span>
+      {/* Inspect Mode Active Notification Bar */}
+      {isInspectMode && (
+        <div className="bg-cyan-950/60 border-b border-cyan-800/40 px-3 py-1.5 flex items-center justify-between text-xs text-cyan-200">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span>Hover and click any component in the preview to edit it with AI</span>
           </div>
-          {onAskFix && (
-            <button
-              type="button"
-              onClick={() => onAskFix(error)}
-              className="ml-3 px-2.5 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-semibold shrink-0 transition-colors"
-            >
-              Auto-Fix with AI
-            </button>
-          )}
+          <button
+            onClick={() => setIsInspectMode(false)}
+            className="text-[11px] underline hover:text-white"
+          >
+            Cancel
+          </button>
         </div>
       )}
 
-      {/* Main Sandbox Canvas */}
-      <div className="flex-1 w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-auto bg-[#0a0b0e]">
+      {/* Frame Container */}
+      <div className="flex-1 bg-[#0a0b0e] flex items-center justify-center overflow-auto p-2 relative">
         <iframe
           key={key}
           ref={iframeRef}
           srcDoc={generateDocumentHtml(code)}
-          title="Sandbox Preview"
-          sandbox="allow-scripts allow-modals allow-forms allow-same-origin"
-          className={`transition-all duration-300 bg-white ${getDeviceDimensions()}`}
+          title="Sandbox Output"
+          sandbox="allow-scripts allow-modals allow-same-origin"
+          className={`transition-all bg-[#0f1117] ${getDeviceDimensions()}`}
         />
+
+        {/* Runtime Error Overlay */}
+        {error && (
+          <div className="absolute bottom-4 left-4 right-4 bg-red-950/90 backdrop-blur-md border border-red-500/50 rounded-xl p-3.5 shadow-2xl text-xs space-y-2 z-30">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 text-red-300 font-semibold">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>Runtime Error Detected</span>
+              </div>
+              {onAskFix && (
+                <button
+                  onClick={() => onAskFix(error)}
+                  className="px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium text-xs shadow transition-colors shrink-0"
+                >
+                  ⚡ Auto-Fix with AI
+                </button>
+              )}
+            </div>
+            <div className="font-mono text-[11px] text-red-200/90 overflow-x-auto max-h-20 p-2 bg-black/40 rounded border border-red-500/20">
+              {error}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
